@@ -1,0 +1,15 @@
+pipeline {
+  agent any
+  environment {
+    IMAGE_NAME = 'omelkir/contact-api'
+  }
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+        script { env.SHORT_SHA = env.GIT_COMMIT.take(7) }
+        echo "Commit : ${env.SHORT_SHA}"
+      }
+    }
+  }
+}
