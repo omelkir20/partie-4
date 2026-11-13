@@ -1,15 +1,107 @@
 pipeline {
   agent any
+
   environment {
     IMAGE_NAME = 'omelkir/contact-api'
   }
+
+  options {
+    timestamps()
+    disableConcurrentBuilds()
+    timeout(time: 20, unit: 'MINUTES')
+    buildDiscarder(logRotator(numToKeepStr: '10'))
+  }
+
   stages {
+
     stage('Checkout') {
       steps {
         checkout scm
         script { env.SHORT_SHA = env.GIT_COMMIT.take(7) }
-        echo "Commit : ${env.SHORT_SHA}"
+        echo "Commit : ${env.GIT_COMMIT} (court : ${env.SHORT_SHA})"
       }
     }
+
+    stage('Install') {
+      agent {
+        docker {
+          image 'node:24-alpine'
+          reuseNode true
+          args '-e HOME=/tmp -e npm_config_cache=/tmp/.npm'
+        }
+      }
+      steps {
+        sh 'npm ci'
+      }
+    }
+
+    stage('Quality') {
+      parallel {
+
+        stage('Lint') {
+          agent {
+            docker {
+              image 'node:24-alpine'
+              reuseNode true
+              args '-e HOME=/tmp -e npm_config_cache=/tmp/.npm'
+            }
+          }
+          steps {
+            sh 'npm run lint'
+          }
+        }
+
+        stage('Unit tests') {
+          agent {
+            docker {
+              image 'node:24-alpine'
+              reuseNode true
+              args '-e HOME=/tmp -e npm_config_cache=/tmp/.npm'
+            }
+          }
+          steps {
+            sh 'npx vitest run --reporter=default --reporter=junit --outputFile.junit=reports/junit.xml'
+          }
+          post {
+            always {
+              junit allowEmptyResults: true, testResults: 'reports/junit.xml'
+            }
+          }
+        }
+      }
+    }
+
+    stage('Build image') {
+      steps {
+        sh '''
+          docker build \
+            -t "$IMAGE_NAME:$SHORT_SHA" \
+            --label org.opencontainers.image.revision="$GIT_COMMIT" \
+            .
+        '''
+      }
+    }
+
+    stage('Push image') {
+      when {
+        expression { (env.BRANCH_NAME ?: env.GIT_BRANCH) in ['main', 'origin/main'] }
+      }
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'dockerhub',
+                          usernameVariable: 'DH_USER', passwordVariable: 'DH_TOKEN')]) {
+          sh 'echo "$DH_TOKEN" | docker login -u "$DH_USER" --password-stdin'
+          sh 'docker push "$IMAGE_NAME:$SHORT_SHA"'
+          sh 'docker logout'
+        }
+        sh 'echo "$IMAGE_NAME:$SHORT_SHA" > image.txt'
+        archiveArtifacts artifacts: 'image.txt', fingerprint: true
+      }
+    }
+  }
+
+  post {
+    success { echo 'Pipeline OK' }
+    failure { echo 'Pipeline en échec : voir les logs et le rapport de tests' }
+    cleanup { cleanWs() }
   }
 }
