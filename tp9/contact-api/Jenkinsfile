@@ -1,107 +1,155 @@
+
 pipeline {
-  agent any
+    agent any
 
-  environment {
-    IMAGE_NAME = 'omelkir/contact-api'
-  }
-
-  options {
-    timestamps()
-    disableConcurrentBuilds()
-    timeout(time: 20, unit: 'MINUTES')
-    buildDiscarder(logRotator(numToKeepStr: '10'))
-  }
-
-  stages {
-
-    stage('Checkout') {
-      steps {
-        checkout scm
-        script { env.SHORT_SHA = env.GIT_COMMIT.take(7) }
-        echo "Commit : ${env.GIT_COMMIT} (court : ${env.SHORT_SHA})"
-      }
+    environment {
+        IMAGE_NAME = 'omelkir/contact-api'
+        APP_DIR = 'tp9/contact-api'
     }
 
-    stage('Install') {
-    agent {
-        docker {
-            image 'node:24-alpine'
-            reuseNode true
-        }
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+        timeout(time: 20, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '10'))
     }
-    steps {
-        dir('tp9/contact-api') {
-            sh 'npm ci'
-        }
-    }
-}
-    stage('Quality') {
-      parallel {
 
-        stage('Lint') {
-          agent {
-            docker {
-              image 'node:24-alpine'
-              reuseNode true
-              args '-e HOME=/tmp -e npm_config_cache=/tmp/.npm'
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+
+                script {
+                    env.SHORT_SHA = env.GIT_COMMIT.take(7)
+                }
+
+                echo "Commit : ${env.GIT_COMMIT} (court : ${env.SHORT_SHA})"
             }
-          }
-          steps {
-            sh 'npm run lint'
-          }
         }
 
-        stage('Unit tests') {
-          agent {
-            docker {
-              image 'node:24-alpine'
-              reuseNode true
-              args '-e HOME=/tmp -e npm_config_cache=/tmp/.npm'
+        stage('Install') {
+            agent {
+                docker {
+                    image 'node:24-alpine'
+                    reuseNode true
+                    args '-e HOME=/tmp'
+                }
             }
-          }
-          steps {
-            sh 'npx vitest run --reporter=default --reporter=junit --outputFile.junit=reports/junit.xml'
-          }
-          post {
-            always {
-              junit allowEmptyResults: true, testResults: 'reports/junit.xml'
+
+            steps {
+                dir("${APP_DIR}") {
+                    sh 'npm ci --cache /tmp/.npm'
+                }
             }
-          }
         }
-      }
-    }
 
-    stage('Build image') {
-      steps {
-        sh '''
-          docker build \
-            -t "$IMAGE_NAME:$SHORT_SHA" \
-            --label org.opencontainers.image.revision="$GIT_COMMIT" \
-            .
-        '''
-      }
-    }
+        stage('Quality') {
+            parallel {
 
-    stage('Push image') {
-      when {
-        expression { (env.BRANCH_NAME ?: env.GIT_BRANCH) in ['main', 'origin/main'] }
-      }
-      steps {
-        withCredentials([usernamePassword(credentialsId: 'dockerhub',
-                          usernameVariable: 'DH_USER', passwordVariable: 'DH_TOKEN')]) {
-          sh 'echo "$DH_TOKEN" | docker login -u "$DH_USER" --password-stdin'
-          sh 'docker push "$IMAGE_NAME:$SHORT_SHA"'
-          sh 'docker logout'
+                stage('Lint') {
+                    agent {
+                        docker {
+                            image 'node:24-alpine'
+                            reuseNode true
+                            args '-e HOME=/tmp'
+                        }
+                    }
+
+                    steps {
+                        dir("${APP_DIR}") {
+                            sh 'npm run lint'
+                        }
+                    }
+                }
+
+                stage('Unit tests') {
+                    agent {
+                        docker {
+                            image 'node:24-alpine'
+                            reuseNode true
+                            args '-e HOME=/tmp'
+                        }
+                    }
+
+                    steps {
+                        dir("${APP_DIR}") {
+                            sh '''
+                                mkdir -p reports
+                                npx vitest run \
+                                  --reporter=default \
+                                  --reporter=junit \
+                                  --outputFile.junit=reports/junit.xml
+                            '''
+                        }
+                    }
+
+                    post {
+                        always {
+                            junit allowEmptyResults: true,
+                                  testResults: 'tp9/contact-api/reports/junit.xml'
+                        }
+                    }
+                }
+            }
         }
-        sh 'echo "$IMAGE_NAME:$SHORT_SHA" > image.txt'
-        archiveArtifacts artifacts: 'image.txt', fingerprint: true
-      }
-    }
-  }
 
-  post {
-    success { echo 'Pipeline OK' }
-    failure { echo 'Pipeline en échec : voir les logs et le rapport de tests' }
-    cleanup { cleanWs() }
-  }
+        stage('Build image') {
+            steps {
+                sh '''
+                    docker build \
+                      -t "$IMAGE_NAME:$SHORT_SHA" \
+                      --label org.opencontainers.image.revision="$GIT_COMMIT" \
+                      tp9/contact-api
+                '''
+            }
+        }
+
+        stage('Push image') {
+            when {
+                expression {
+                    (env.BRANCH_NAME ?: env.GIT_BRANCH) in ['main', 'origin/main']
+                }
+            }
+
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub',
+                        usernameVariable: 'DH_USER',
+                        passwordVariable: 'DH_TOKEN'
+                    )
+                ]) {
+                    sh '''
+                        echo "$DH_TOKEN" | docker login \
+                          -u "$DH_USER" \
+                          --password-stdin
+
+                        docker push "$IMAGE_NAME:$SHORT_SHA"
+
+                        docker logout
+                    '''
+                }
+
+                sh 'echo "$IMAGE_NAME:$SHORT_SHA" > image.txt'
+
+                archiveArtifacts artifacts: 'image.txt',
+                                 fingerprint: true
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline OK'
+        }
+
+        failure {
+            echo 'Pipeline en échec : voir les logs et le rapport de tests'
+        }
+
+        cleanup {
+            cleanWs()
+        }
+    }
 }
