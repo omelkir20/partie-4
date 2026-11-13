@@ -35,3 +35,4 @@ export function createApp({ contactRepository, rateLimitMax = 5 }) {
 
   return app;
 }
+// test rate limit config

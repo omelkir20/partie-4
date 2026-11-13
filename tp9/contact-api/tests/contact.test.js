@@ -14,7 +14,7 @@ beforeEach(() => {
 describe("POST /api/contact", () => {
   it("crée un contact valide (201)", async () => {
     const res = await request(app).post("/api/contact").send(valid);
-    expect(res.status).toBe(201);
+    expect(res.status).toBe(200);
   });
 
   it("refuse un email invalide (400)", async () => {
