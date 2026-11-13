@@ -23,18 +23,18 @@ pipeline {
     }
 
     stage('Install') {
-      agent {
+    agent {
         docker {
-          image 'node:24-alpine'
-          reuseNode true
-          args '-e HOME=/tmp -e npm_config_cache=/tmp/.npm'
+            image 'node:24-alpine'
+            reuseNode true
         }
-      }
-      steps {
-        sh 'npm ci'
-      }
     }
-
+    steps {
+        dir('tp9/contact-api') {
+            sh 'npm ci'
+        }
+    }
+}
     stage('Quality') {
       parallel {
 
