@@ -32,6 +32,39 @@
 ![](cap-partie4/tp9-cap25.PNG)
 ![](cap-partie4/tp9-cap26.PNG)
 ## TP 10
+### Partie 0 : Décompresser et initialiser
+![](cap-partie4/tp10-cap1.PNG)
+![](cap-partie4/tp10-cap2.PNG)
+### Partie 1 : Gitleaks
+![](cap-partie4/tp10-cap3.PNG)
+![](cap-partie4/tp10-cap4.PNG)
+![](cap-partie4/tp10-cap5.PNG)
+![](cap-partie4/tp10-cap6.PNG)
+### Partie 2 : Hook pre-commit
+![](cap-partie4/tp10-cap7.PNG)
+![](cap-partie4/tp10-cap8.PNG)
+![](cap-partie4/tp10-cap9.PNG)
+### Partie 3 + 4 :
+![](cap-partie4/tp10-cap10.PNG)
+![](cap-partie4/tp10-cap11.PNG)
+![](cap-partie4/tp10-cap12.PNG)
+![](cap-partie4/tp10-cap13.PNG)
+![](cap-partie4/tp10-cap14.PNG)
+![](cap-partie4/tp10-cap15.PNG)
+![](cap-partie4/tp10-cap16.PNG)
+![](cap-partie4/tp10-cap17.PNG)
+![](cap-partie4/tp10-cap18.PNG)
+### Partie 5 : GitHub
+![](cap-partie4/tp10-cap19.PNG)
+![](cap-partie4/tp10-cap20.PNG)
+![](cap-partie4/tp10-cap21.PNG)
+![](cap-partie4/tp10-cap22.PNG)
+![](cap-partie4/tp10-cap23.PNG)
+![](cap-partie4/tp10-cap24.PNG)
+![](cap-partie4/tp10-cap25.PNG)
+![](cap-partie4/tp10-cap25.PNG)
+
+
 
 
 
