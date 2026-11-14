@@ -1,8 +1,14 @@
-// ⚠️ TP10 : secrets FACTICES codés en dur, à détecter avec Gitleaks puis à retirer.
-// Ces valeurs n'ouvrent aucun accès réel.
+// Les secrets sont lus dans les variables d'environnement (voir .env.example).
+const required = ["JWT_SECRET", "PAYMENT_API_KEY", "DB_PASSWORD"];
+for (const name of required) {
+  if (!process.env[name]) {
+    throw new Error(`Variable d'environnement manquante : ${name}`);
+  }
+}
+
 module.exports = {
-  port: 3000,
-  jwt_secret: "q8Vt3LmZ0pR7xWc2NfYb5KdH9sJe4UaG",
-  payment_api_key: "pk_lab_7f3c9a1e5b2d8f4a6c0e9b7d3a1f5c8e",
-  db_password: "SuperSecret-Lab-2026!",
+  port: Number(process.env.PORT) || 3000,
+  jwt_secret: process.env.JWT_SECRET,
+  payment_api_key: process.env.PAYMENT_API_KEY,
+  db_password: process.env.DB_PASSWORD,
 };

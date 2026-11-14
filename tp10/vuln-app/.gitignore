@@ -1,0 +1,13 @@
+# Dépendances
+node_modules/
+
+# Secrets et configuration locale
+.env
+
+# Rapports générés par les scanners
+reports/
+
+# Logs
+*.log
+npm-debug.log*
+.env
