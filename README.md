@@ -63,10 +63,27 @@
 ![](cap-partie4/tp10-cap24.PNG)
 ![](cap-partie4/tp10-cap25.PNG)
 ![](cap-partie4/tp10-cap25.PNG)
-
-
-
-
+## TP 11
+### Étape 1 : Préparer GitLab et le projet
+![](cap-partie4/tp11-cap1.PNG)
+![](cap-partie4/tp11-cap2.PNG)
+![](cap-partie4/tp11-cap3.PNG)
+![](cap-partie4/tp11-cap4.PNG)
+![](cap-partie4/tp11-cap5.PNG)
+### Étape 2 : Installer le runner
+![](cap-partie4/tp11-cap6.PNG)
+![](cap-partie4/tp11-cap7.PNG)
+![](cap-partie4/tp11-cap8.PNG)
+![](cap-partie4/tp11-cap9.PNG)
+![](cap-partie4/tp11-cap10.PNG)
+![](cap-partie4/tp11-cap11.PNG)
+![](cap-partie4/tp11-cap12.PNG)
+### Étape 3 : Premier pipeline
+![](cap-partie4/tp11-cap13.PNG)
+![](cap-partie4/tp11-cap14.PNG)
+![](cap-partie4/tp11-cap15.PNG)
+![](cap-partie4/tp11-cap16.PNG)
+![](cap-partie4/tp11-cap17.PNG)
 
 
 
