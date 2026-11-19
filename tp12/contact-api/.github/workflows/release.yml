@@ -1,0 +1,83 @@
+name: Release & Supply Chain Security
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 1. Connexion à GHCR
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 2. Extraire les métadonnées (tags et labels) pour Docker
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      # 3. Construire et pousser l'image
+      - name: Build and push Docker image
+        id: build-and-push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      # 4. TODO : Générer le SBOM avec Syft (anchore/sbom-action)
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build-and-push.outputs.digest }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+      # 5. TODO : Installer Cosign
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.5.0
+
+      # 6. TODO : Signer l'image en mode Keyless
+      - name: Sign the published Docker image
+        env:
+          DIGEST: ${{ steps.build-and-push.outputs.digest }}
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          cosign sign --yes ${TAGS}@${DIGEST}
+
+      # 7. TODO : Générer l'attestation de provenance (SLSA)
+      - name: Generate Provenance Attestation
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.build-and-push.outputs.digest }}
+          push-to-registry: true
+
+      # 8. (Optionnel) Attacher le SBOM à l'image en tant qu'attestation
+      - name: Attach SBOM as attestation
+        env:
+          DIGEST: ${{ steps.build-and-push.outputs.digest }}
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          cosign attest --yes --type spdxjson --predicate sbom.spdx.json ${TAGS}@${DIGEST}
